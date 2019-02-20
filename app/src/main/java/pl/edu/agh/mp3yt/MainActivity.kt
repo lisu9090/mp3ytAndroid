@@ -21,6 +21,8 @@ import android.content.Intent
 import android.net.ConnectivityManager
 import android.os.AsyncTask
 import android.os.Bundle
+import android.support.design.widget.NavigationView
+import android.support.v4.widget.DrawerLayout
 import android.text.TextUtils
 import android.text.method.ScrollingMovementMethod
 import android.view.ViewGroup
@@ -40,6 +42,7 @@ class MainActivity : Activity(), EasyPermissions.PermissionCallbacks {
     private var mOutputText: TextView? = null
     private var mCallApiButton: Button? = null
     internal lateinit var mProgress: ProgressDialog
+    private lateinit var mDrawerLayout: DrawerLayout
 
     /**
      * Checks whether the device currently has a network connection.
@@ -70,40 +73,56 @@ class MainActivity : Activity(), EasyPermissions.PermissionCallbacks {
      */
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        val activityLayout = LinearLayout(this)
-        val lp = LinearLayout.LayoutParams(
-        LinearLayout.LayoutParams.MATCH_PARENT,
-        LinearLayout.LayoutParams.MATCH_PARENT)
-            activityLayout.layoutParams = lp
-            activityLayout.orientation = LinearLayout.VERTICAL
-        activityLayout.setPadding(16, 16, 16, 16)
 
-        val tlp = ViewGroup.LayoutParams(
-        ViewGroup.LayoutParams.WRAP_CONTENT,
-        ViewGroup.LayoutParams.WRAP_CONTENT)
+        mDrawerLayout = findViewById(R.id.drawer_layout)
+        val navigationView: NavigationView = findViewById(R.id.nav_view)
+        navigationView.setNavigationItemSelectedListener { menuItem ->
+            // set item as selected to persist highlight
+            menuItem.isChecked = true
+            // close drawer when item is tapped
+            mDrawerLayout.closeDrawers()
 
-        mCallApiButton = Button(this)
-            mCallApiButton!!.text = BUTTON_TEXT
-        mCallApiButton!!.setOnClickListener {
-            mCallApiButton!!.isEnabled = false
-            mOutputText!!.text = ""
-            getResultsFromApi()
-            mCallApiButton!!.isEnabled = true
+            when(menuItem){
+
+            }
+
+            true
         }
-        activityLayout.addView(mCallApiButton)
 
-        mOutputText = TextView(this)
-            mOutputText!!.layoutParams = tlp
-        mOutputText!!.setPadding(16, 16, 16, 16)
-            mOutputText!!.isVerticalScrollBarEnabled = true
-            mOutputText!!.movementMethod = ScrollingMovementMethod()
-            mOutputText!!.text = "Click the \'$BUTTON_TEXT\' button to test the API."
-        activityLayout.addView(mOutputText)
-
-        mProgress = ProgressDialog(this)
-        mProgress.setMessage("Calling YouTube Data API ...")
-
-        setContentView(activityLayout)
+//        val activityLayout = LinearLayout(this)
+//        val lp = LinearLayout.LayoutParams(
+//        LinearLayout.LayoutParams.MATCH_PARENT,
+//        LinearLayout.LayoutParams.MATCH_PARENT)
+//            activityLayout.layoutParams = lp
+//            activityLayout.orientation = LinearLayout.VERTICAL
+//        activityLayout.setPadding(16, 16, 16, 16)
+//
+//        val tlp = ViewGroup.LayoutParams(
+//        ViewGroup.LayoutParams.WRAP_CONTENT,
+//        ViewGroup.LayoutParams.WRAP_CONTENT)
+//
+//        mCallApiButton = Button(this)
+//            mCallApiButton!!.text = BUTTON_TEXT
+//        mCallApiButton!!.setOnClickListener {
+//            mCallApiButton!!.isEnabled = false
+//            mOutputText!!.text = ""
+//            getResultsFromApi()
+//            mCallApiButton!!.isEnabled = true
+//        }
+//        activityLayout.addView(mCallApiButton)
+//
+//        mOutputText = TextView(this)
+//            mOutputText!!.layoutParams = tlp
+//        mOutputText!!.setPadding(16, 16, 16, 16)
+//            mOutputText!!.isVerticalScrollBarEnabled = true
+//            mOutputText!!.movementMethod = ScrollingMovementMethod()
+//            mOutputText!!.text = "Click the \'$BUTTON_TEXT\' button to test the API."
+//        activityLayout.addView(mOutputText)
+//
+//        mProgress = ProgressDialog(this)
+//        mProgress.setMessage("Calling YouTube Data API ...")
+//
+//        setContentView(activityLayout)
 
         // Initialize credentials and service object.
         mCredential = GoogleAccountCredential.usingOAuth2(
@@ -341,7 +360,6 @@ class MainActivity : Activity(), EasyPermissions.PermissionCallbacks {
             }
 
         }
-
 
         override fun onPreExecute() {
             mOutputText!!.text = ""
