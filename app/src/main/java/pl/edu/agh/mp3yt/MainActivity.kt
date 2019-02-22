@@ -36,13 +36,14 @@ import java.util.Arrays
 
 import pub.devrel.easypermissions.AfterPermissionGranted
 import pub.devrel.easypermissions.EasyPermissions
+import utils.NavigationListener
 
 class MainActivity : Activity(), EasyPermissions.PermissionCallbacks {
     private lateinit var mCredential: GoogleAccountCredential
     private var mOutputText: TextView? = null
     private var mCallApiButton: Button? = null
     internal lateinit var mProgress: ProgressDialog
-    private lateinit var mDrawerLayout: DrawerLayout
+//    private lateinit var mDrawerLayout: DrawerLayout
 
     /**
      * Checks whether the device currently has a network connection.
@@ -73,21 +74,12 @@ class MainActivity : Activity(), EasyPermissions.PermissionCallbacks {
      */
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        setContentView(R.layout.activity_main)
 
-        mDrawerLayout = findViewById(R.id.drawer_layout)
-        val navigationView: NavigationView = findViewById(R.id.nav_view)
-        navigationView.setNavigationItemSelectedListener { menuItem ->
-            // set item as selected to persist highlight
-            menuItem.isChecked = true
-            // close drawer when item is tapped
-            mDrawerLayout.closeDrawers()
-
-            when(menuItem){
-
-            }
-
-            true
-        }
+//        mDrawerLayout = findViewById(R.id.drawer_layout)
+        val navigationView: NavigationView? = findViewById(R.id.nav_view)
+        navigationView!!.setNavigationItemSelectedListener(NavigationListener(this, findViewById(R.id.drawer_layout)))
+        navigationView!!.setCheckedItem(R.id.nav_search)
 
 //        val activityLayout = LinearLayout(this)
 //        val lp = LinearLayout.LayoutParams(
