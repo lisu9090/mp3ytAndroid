@@ -12,11 +12,6 @@ android:fitsSystemWindows="true">
             android:layout_width="match_parent"
             android:layout_height="match_parent" >
 
-        <TextView android:id="@+id/test_text_view"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="wyszukiwanie"
-                android:layout_margin="50dp"/>
 
     </RelativeLayout>
 

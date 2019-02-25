@@ -22,6 +22,8 @@ import android.net.ConnectivityManager
 import android.os.AsyncTask
 import android.os.Bundle
 import android.support.design.widget.NavigationView
+import android.support.v4.app.Fragment
+import android.support.v4.app.FragmentActivity
 import android.support.v4.widget.DrawerLayout
 import android.text.TextUtils
 import android.text.method.ScrollingMovementMethod
@@ -36,9 +38,10 @@ import java.util.Arrays
 
 import pub.devrel.easypermissions.AfterPermissionGranted
 import pub.devrel.easypermissions.EasyPermissions
+import utils.FragmentNavigatorListener
 import utils.NavigationListener
 
-class MainActivity : Activity(), EasyPermissions.PermissionCallbacks {
+class MainActivity : FragmentActivity(), EasyPermissions.PermissionCallbacks {
     private lateinit var mCredential: GoogleAccountCredential
     private var mOutputText: TextView? = null
     private var mCallApiButton: Button? = null
@@ -78,7 +81,11 @@ class MainActivity : Activity(), EasyPermissions.PermissionCallbacks {
 
 //        mDrawerLayout = findViewById(R.id.drawer_layout)
         val navigationView: NavigationView? = findViewById(R.id.nav_view)
-        navigationView!!.setNavigationItemSelectedListener(NavigationListener(this, findViewById(R.id.drawer_layout)))
+
+//        val navigator: NavigationView.OnNavigationItemSelectedListener? = NavigationListener(this, findViewById(R.id.drawer_layout))
+        val navigator: NavigationView.OnNavigationItemSelectedListener? = FragmentNavigatorListener(supportFragmentManager)
+
+        navigationView!!.setNavigationItemSelectedListener(navigator)
         navigationView!!.setCheckedItem(R.id.nav_search)
 
 //        val activityLayout = LinearLayout(this)
