@@ -22,15 +22,8 @@ import android.net.ConnectivityManager
 import android.os.AsyncTask
 import android.os.Bundle
 import android.support.design.widget.NavigationView
-import android.support.v4.app.Fragment
 import android.support.v4.app.FragmentActivity
-import android.support.v4.widget.DrawerLayout
 import android.text.TextUtils
-import android.text.method.ScrollingMovementMethod
-import android.view.ViewGroup
-import android.widget.Button
-import android.widget.LinearLayout
-import android.widget.TextView
 
 import java.io.IOException
 import java.util.ArrayList
@@ -39,14 +32,15 @@ import java.util.Arrays
 import pub.devrel.easypermissions.AfterPermissionGranted
 import pub.devrel.easypermissions.EasyPermissions
 import utils.FragmentNavigatorListener
-import utils.NavigationListener
+import utils.YouTubeDownloader
+
+//import utils.NavigationListener
 
 class MainActivity : FragmentActivity(), EasyPermissions.PermissionCallbacks {
     private lateinit var mCredential: GoogleAccountCredential
-    private var mOutputText: TextView? = null
-    private var mCallApiButton: Button? = null
+    private var mSearchFragment:SearchFragment? = null
     internal lateinit var mProgress: ProgressDialog
-//    private lateinit var mDrawerLayout: DrawerLayout
+    private val mDownloadManager = YouTubeDownloader()
 
     /**
      * Checks whether the device currently has a network connection.
@@ -79,49 +73,24 @@ class MainActivity : FragmentActivity(), EasyPermissions.PermissionCallbacks {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-//        mDrawerLayout = findViewById(R.id.drawer_layout)
+        if (!EasyPermissions.hasPermissions(this, Manifest.permission.WRITE_EXTERNAL_STORAGE)){
+                EasyPermissions.requestPermissions(
+                    this,
+                    "This app needs to access storage system to save downloaded files (mp3)",
+                    REQUEST_PERMISSION_WRITE_EXTERNAL_STORAGE,
+                    Manifest.permission.WRITE_EXTERNAL_STORAGE
+                )
+            }
+
         val navigationView: NavigationView? = findViewById(R.id.nav_view)
-
-//        val navigator: NavigationView.OnNavigationItemSelectedListener? = NavigationListener(this, findViewById(R.id.drawer_layout))
-        val navigator: NavigationView.OnNavigationItemSelectedListener? = FragmentNavigatorListener(supportFragmentManager)
-
+        val navigator = FragmentNavigatorListener(supportFragmentManager, findViewById(R.id.drawer_layout))
+        navigator.showInitialFragment()
+        if(navigator.getFragment(0) is SearchFragment)
+            mSearchFragment = navigator.getFragment(0) as SearchFragment
         navigationView!!.setNavigationItemSelectedListener(navigator)
-        navigationView!!.setCheckedItem(R.id.nav_search)
 
-//        val activityLayout = LinearLayout(this)
-//        val lp = LinearLayout.LayoutParams(
-//        LinearLayout.LayoutParams.MATCH_PARENT,
-//        LinearLayout.LayoutParams.MATCH_PARENT)
-//            activityLayout.layoutParams = lp
-//            activityLayout.orientation = LinearLayout.VERTICAL
-//        activityLayout.setPadding(16, 16, 16, 16)
-//
-//        val tlp = ViewGroup.LayoutParams(
-//        ViewGroup.LayoutParams.WRAP_CONTENT,
-//        ViewGroup.LayoutParams.WRAP_CONTENT)
-//
-//        mCallApiButton = Button(this)
-//            mCallApiButton!!.text = BUTTON_TEXT
-//        mCallApiButton!!.setOnClickListener {
-//            mCallApiButton!!.isEnabled = false
-//            mOutputText!!.text = ""
-//            getResultsFromApi()
-//            mCallApiButton!!.isEnabled = true
-//        }
-//        activityLayout.addView(mCallApiButton)
-//
-//        mOutputText = TextView(this)
-//            mOutputText!!.layoutParams = tlp
-//        mOutputText!!.setPadding(16, 16, 16, 16)
-//            mOutputText!!.isVerticalScrollBarEnabled = true
-//            mOutputText!!.movementMethod = ScrollingMovementMethod()
-//            mOutputText!!.text = "Click the \'$BUTTON_TEXT\' button to test the API."
-//        activityLayout.addView(mOutputText)
-//
-//        mProgress = ProgressDialog(this)
-//        mProgress.setMessage("Calling YouTube Data API ...")
-//
-//        setContentView(activityLayout)
+        mProgress = ProgressDialog(this)
+        mProgress.setMessage("Calling YouTube Data API ...")
 
         // Initialize credentials and service object.
         mCredential = GoogleAccountCredential.usingOAuth2(
@@ -130,6 +99,12 @@ class MainActivity : FragmentActivity(), EasyPermissions.PermissionCallbacks {
             .setBackOff(ExponentialBackOff())
     }
 
+    override fun onStart() {
+        super.onStart()
+        mSearchFragment?.mSearchButton?.setOnClickListener {
+            getResultsFromApi()
+        }
+    }
 
     /**
      * Attempt to call the API, after verifying that all the preconditions are
@@ -139,14 +114,16 @@ class MainActivity : FragmentActivity(), EasyPermissions.PermissionCallbacks {
      * appropriate.
      */
     private fun getResultsFromApi() {
-        if (!isGooglePlayServicesAvailable) {
-            acquireGooglePlayServices()
-        } else if (mCredential.selectedAccountName == null) {
-            chooseAccount()
-        } else if (!isDeviceOnline) {
-            mOutputText!!.text = "No network connection available."
-        } else {
-            MakeRequestTask(mCredential).execute()
+        if(!mSearchFragment?.mSearchEditText!!.text.isNullOrEmpty()){
+            if (!isGooglePlayServicesAvailable) {
+                acquireGooglePlayServices()
+            } else if (mCredential.selectedAccountName == null) {
+                chooseAccount()
+            } else if (!isDeviceOnline) {
+                mSearchFragment?.mSearchResultTextView!!.text = "No network connection available."
+            } else {
+                MakeRequestTask(mCredential).execute()
+            }
         }
     }
 
@@ -205,7 +182,7 @@ class MainActivity : FragmentActivity(), EasyPermissions.PermissionCallbacks {
         super.onActivityResult(requestCode, resultCode, data)
         when (requestCode) {
             REQUEST_GOOGLE_PLAY_SERVICES -> if (resultCode != Activity.RESULT_OK) {
-                mOutputText!!.text =
+                mSearchFragment?.mSearchResultTextView!!.text =
                     ("This app requires Google Play Services. Please install " + "Google Play Services on your device and relaunch this app.")
             } else {
                 getResultsFromApi()
@@ -243,9 +220,7 @@ class MainActivity : FragmentActivity(), EasyPermissions.PermissionCallbacks {
         grantResults: IntArray
     ) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        EasyPermissions.onRequestPermissionsResult(
-            requestCode, permissions, grantResults, this
-        )
+        EasyPermissions.onRequestPermissionsResult(requestCode, permissions, grantResults, this)
     }
 
     /**
@@ -315,22 +290,31 @@ class MainActivity : FragmentActivity(), EasyPermissions.PermissionCallbacks {
          * @return List of Strings containing information about the channel.
          * @throws IOException
          */
-        private// Get a list of up to 10 files.
-        val dataFromApi: List<String>
+        private val dataFromApi: List<String>
             @Throws(IOException::class)
             get() {
                 val channelInfo = ArrayList<String>()
-                val result = mService!!.channels().list("snippet,contentDetails,statistics")
-                    .setForUsername("GoogleDevelopers")
+//                val result = mService!!.videos().list("snippet,contentDetails,statistics")
+////                    .setForUsername("GoogleDevelopers")
+//                    .setId("XbGs_qK2PQA")
+//                    .execute()
+
+
+                val test = mSearchFragment?.mSearchEditText!!.text.toString()
+                val result = mService!!.search().list("id,snippet").setMaxResults(5).setQ(test)
                     .execute()
-                val channels = result.items
-                if (channels != null) {
-                    val channel = channels!![0]
-                    channelInfo.add(
-                        "This channel's ID is " + channel.id + ". " +
-                                "Its title is '" + channel.snippet.title + ", " +
-                                "and it has " + channel.statistics.viewCount + " views."
-                    )
+
+
+                val videos = result.items
+                if (videos != null) {
+                    for(video in videos){
+                        channelInfo.add(
+                            "This video's ID is " + video.id.videoId + ". " +
+                                    "Its title is '" + video.snippet.title // + ", " +
+//                                "and it has " + channel.statistics.viewCount + " views."
+                        )
+                    }
+                    mDownloadManager.execute(videos[0].id.videoId)
                 }
                 return channelInfo
             }
@@ -338,10 +322,8 @@ class MainActivity : FragmentActivity(), EasyPermissions.PermissionCallbacks {
         init {
             val transport = AndroidHttp.newCompatibleTransport()
             val jsonFactory = JacksonFactory.getDefaultInstance()
-            mService = com.google.api.services.youtube.YouTube.Builder(
-                transport, jsonFactory, credential
-            )
-                .setApplicationName("YouTube Data API Android Quickstart")
+            mService = com.google.api.services.youtube.YouTube.Builder(transport, jsonFactory, credential)
+                .setApplicationName("mp3yt")
                 .build()
         }
 
@@ -361,17 +343,16 @@ class MainActivity : FragmentActivity(), EasyPermissions.PermissionCallbacks {
         }
 
         override fun onPreExecute() {
-            mOutputText!!.text = ""
+            mSearchFragment?.mSearchResultTextView!!.text = ""
             mProgress.show()
         }
 
         override fun onPostExecute(output: List<String>?) {
             mProgress.hide()
             if (output == null || output!!.size == 0) {
-                mOutputText!!.text = "No results returned."
+                mSearchFragment?.mSearchResultTextView!!.text = "No results returned."
             } else {
-//        output!!.add(0, "Data retrieved using the YouTube Data API:")
-                mOutputText!!.text = "Data retrieved using the YouTube Data API:\n".plus(TextUtils.join("\n", output!!))
+                mSearchFragment?.mSearchResultTextView!!.text = "Data retrieved using the YouTube Data API:\n".plus(TextUtils.join("\n", output!!))
             }
         }
 
@@ -389,10 +370,10 @@ class MainActivity : FragmentActivity(), EasyPermissions.PermissionCallbacks {
                         MainActivity.REQUEST_AUTHORIZATION
                     )
                 } else {
-                    mOutputText!!.text = ("The following error occurred:\n" + mLastError!!.message)
+                    mSearchFragment?.mSearchResultTextView!!.text = ("The following error occurred:\n" + mLastError!!.message)
                 }
             } else {
-                mOutputText!!.text = "Request cancelled."
+                mSearchFragment?.mSearchResultTextView!!.text = "Request cancelled."
             }
         }
     }
@@ -402,8 +383,9 @@ class MainActivity : FragmentActivity(), EasyPermissions.PermissionCallbacks {
         internal const val REQUEST_AUTHORIZATION = 1001
         internal const val REQUEST_GOOGLE_PLAY_SERVICES = 1002
         internal const val REQUEST_PERMISSION_GET_ACCOUNTS = 1003
+        internal const val REQUEST_PERMISSION_WRITE_EXTERNAL_STORAGE = 1004
 
-        private const val BUTTON_TEXT = "Call YouTube Data API"
+
         private const val PREF_ACCOUNT_NAME = "accountName"
         private val SCOPES = arrayOf(YouTubeScopes.YOUTUBE_READONLY)
     }
