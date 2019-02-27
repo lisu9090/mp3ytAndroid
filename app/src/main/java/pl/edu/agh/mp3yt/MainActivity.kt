@@ -23,7 +23,12 @@ import android.os.AsyncTask
 import android.os.Bundle
 import android.support.design.widget.NavigationView
 import android.support.v4.app.FragmentActivity
+import android.support.v7.app.AppCompatActivity
 import android.text.TextUtils
+import android.view.View
+import android.view.inputmethod.InputMethodManager
+import android.widget.SearchView
+import models.SearchResult
 
 import java.io.IOException
 import java.util.ArrayList
@@ -36,7 +41,7 @@ import utils.YouTubeDownloader
 
 //import utils.NavigationListener
 
-class MainActivity : FragmentActivity(), EasyPermissions.PermissionCallbacks {
+class MainActivity : AppCompatActivity(), EasyPermissions.PermissionCallbacks {
     private lateinit var mCredential: GoogleAccountCredential
     private var mSearchFragment:SearchFragment? = null
     internal lateinit var mProgress: ProgressDialog
@@ -90,7 +95,7 @@ class MainActivity : FragmentActivity(), EasyPermissions.PermissionCallbacks {
         navigationView!!.setNavigationItemSelectedListener(navigator)
 
         mProgress = ProgressDialog(this)
-        mProgress.setMessage("Calling YouTube Data API ...")
+        mProgress.setMessage("Szukam...")
 
         // Initialize credentials and service object.
         mCredential = GoogleAccountCredential.usingOAuth2(
@@ -101,9 +106,21 @@ class MainActivity : FragmentActivity(), EasyPermissions.PermissionCallbacks {
 
     override fun onStart() {
         super.onStart()
-        mSearchFragment?.mSearchButton?.setOnClickListener {
-            getResultsFromApi()
-        }
+        mSearchFragment?.mSearchView?.setOnQueryTextListener(object: SearchView.OnQueryTextListener{
+            override fun onQueryTextSubmit(query: String?): Boolean {
+                if(!query.isNullOrEmpty()){
+                    getResultsFromApi()
+                    (getSystemService(Activity.INPUT_METHOD_SERVICE) as InputMethodManager)
+                        .hideSoftInputFromWindow(currentFocus.windowToken, 0)
+                    return true
+                }
+                return false
+            }
+
+            override fun onQueryTextChange(newText: String?): Boolean {
+                return true
+            }
+        })
     }
 
     /**
@@ -114,13 +131,13 @@ class MainActivity : FragmentActivity(), EasyPermissions.PermissionCallbacks {
      * appropriate.
      */
     private fun getResultsFromApi() {
-        if(!mSearchFragment?.mSearchEditText!!.text.isNullOrEmpty()){
+        if(!mSearchFragment?.mSearchView!!.query.isNullOrEmpty()){
             if (!isGooglePlayServicesAvailable) {
                 acquireGooglePlayServices()
             } else if (mCredential.selectedAccountName == null) {
                 chooseAccount()
             } else if (!isDeviceOnline) {
-                mSearchFragment?.mSearchResultTextView!!.text = "No network connection available."
+                mSearchFragment?.mNoResults!!.text = "No network connection available."
             } else {
                 MakeRequestTask(mCredential).execute()
             }
@@ -182,7 +199,7 @@ class MainActivity : FragmentActivity(), EasyPermissions.PermissionCallbacks {
         super.onActivityResult(requestCode, resultCode, data)
         when (requestCode) {
             REQUEST_GOOGLE_PLAY_SERVICES -> if (resultCode != Activity.RESULT_OK) {
-                mSearchFragment?.mSearchResultTextView!!.text =
+                mSearchFragment?.mNoResults!!.text =
                     ("This app requires Google Play Services. Please install " + "Google Play Services on your device and relaunch this app.")
             } else {
                 getResultsFromApi()
@@ -281,7 +298,7 @@ class MainActivity : FragmentActivity(), EasyPermissions.PermissionCallbacks {
      * Placing the API calls in their own task ensures the UI stays responsive.
      */
     private inner class MakeRequestTask internal constructor(credential: GoogleAccountCredential) :
-        AsyncTask<Void, Void, List<String>>() {
+        AsyncTask<Void, Void, List<SearchResult>>() {
         private var mService: com.google.api.services.youtube.YouTube? = null
         private var mLastError: Exception? = null
 
@@ -290,31 +307,20 @@ class MainActivity : FragmentActivity(), EasyPermissions.PermissionCallbacks {
          * @return List of Strings containing information about the channel.
          * @throws IOException
          */
-        private val dataFromApi: List<String>
+        private val dataFromApi: List<SearchResult>
             @Throws(IOException::class)
             get() {
-                val channelInfo = ArrayList<String>()
-//                val result = mService!!.videos().list("snippet,contentDetails,statistics")
-////                    .setForUsername("GoogleDevelopers")
-//                    .setId("XbGs_qK2PQA")
-//                    .execute()
+                val channelInfo = ArrayList<SearchResult>()
 
-
-                val test = mSearchFragment?.mSearchEditText!!.text.toString()
+                val test = mSearchFragment?.mSearchView!!.query.toString()
                 val result = mService!!.search().list("id,snippet").setMaxResults(5).setQ(test)
                     .execute()
 
-
                 val videos = result.items
                 if (videos != null) {
-                    for(video in videos){
-                        channelInfo.add(
-                            "This video's ID is " + video.id.videoId + ". " +
-                                    "Its title is '" + video.snippet.title // + ", " +
-//                                "and it has " + channel.statistics.viewCount + " views."
-                        )
+                    for(video in videos) {
+                        channelInfo.add(SearchResult(video.id.videoId, video.snippet.title))
                     }
-                    mDownloadManager.execute(videos[0].id.videoId)
                 }
                 return channelInfo
             }
@@ -331,7 +337,7 @@ class MainActivity : FragmentActivity(), EasyPermissions.PermissionCallbacks {
          * Background task to call YouTube Data API.
          * @param params no parameters needed for this task.
          */
-        override fun doInBackground(vararg params: Void): List<String>? {
+        override fun doInBackground(vararg params: Void): List<SearchResult>? {
             try {
                 return dataFromApi
             } catch (e: Exception) {
@@ -339,21 +345,27 @@ class MainActivity : FragmentActivity(), EasyPermissions.PermissionCallbacks {
                 cancel(true)
                 return null
             }
-
         }
 
         override fun onPreExecute() {
-            mSearchFragment?.mSearchResultTextView!!.text = ""
+            mSearchFragment?.mNoResults!!.text = ""
             mProgress.show()
         }
 
-        override fun onPostExecute(output: List<String>?) {
-            mProgress.hide()
+        override fun onPostExecute(output: List<SearchResult>?) {
             if (output == null || output!!.size == 0) {
-                mSearchFragment?.mSearchResultTextView!!.text = "No results returned."
+                mSearchFragment?.mNoResults!!.visibility = View.VISIBLE
+                mSearchFragment?.mNoResults!!.text = "No results returned."
             } else {
-                mSearchFragment?.mSearchResultTextView!!.text = "Data retrieved using the YouTube Data API:\n".plus(TextUtils.join("\n", output!!))
+                mSearchFragment?.mNoResults!!.visibility = View.INVISIBLE
+
+                val fragmentTransaction = supportFragmentManager.beginTransaction()
+                for(result in output){
+                    fragmentTransaction.add(R.id.search_result_container, SearchResultFragment.getInstance(result))
+                }
+                fragmentTransaction.commit()
             }
+            mProgress.hide()
         }
 
         override fun onCancelled() {
@@ -370,10 +382,10 @@ class MainActivity : FragmentActivity(), EasyPermissions.PermissionCallbacks {
                         MainActivity.REQUEST_AUTHORIZATION
                     )
                 } else {
-                    mSearchFragment?.mSearchResultTextView!!.text = ("The following error occurred:\n" + mLastError!!.message)
+                    mSearchFragment?.mNoResults!!.text = ("The following error occurred:\n" + mLastError!!.message)
                 }
             } else {
-                mSearchFragment?.mSearchResultTextView!!.text = "Request cancelled."
+                mSearchFragment?.mNoResults!!.text = "Request cancelled."
             }
         }
     }

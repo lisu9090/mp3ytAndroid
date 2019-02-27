@@ -14,12 +14,6 @@
             android:roundIcon="@mipmap/ic_launcher_round"
             android:supportsRtl="true"
             android:theme="@style/Theme.AppCompat" >
-        <activity android:name=".SettingsActivity"
-                  android:launchMode="singleInstance">
-        </activity>
-        <activity android:name=".DownloadActivity"
-                  android:launchMode="singleInstance">
-        </activity>
         <activity android:name=".MainActivity"
                   android:launchMode="singleInstance">
             <intent-filter>
