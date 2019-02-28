@@ -11,4 +11,7 @@
     <string name="search_button_string">Szukaj</string>
     <string name="search_results">Wyniki wyszukiwania</string>
     <string name="no_results">Brak wyników</string>
+    <string name="play_audio_data">Play audio data</string>
+    <string name="download_audio_data">Download audio data</string>
+    <string name="video_image">Video image</string>
 </resources>

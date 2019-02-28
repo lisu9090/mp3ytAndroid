@@ -4,11 +4,20 @@
              android:layout_width="match_parent"
              android:layout_height="match_parent"
              tools:context=".DownloadFragment">
-
-    <!-- TODO: Update blank fragment layout -->
-    <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="@string/download"/>
-
+    <ScrollView android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:id="@+id/downloaded_scroll_view"
+    >
+        <LinearLayout android:layout_width="match_parent"
+                      android:layout_height="wrap_content"
+                      android:orientation="vertical"
+                      android:id="@+id/downloaded_result_container"
+        >
+            <TextView android:layout_width="match_parent"
+                      android:layout_height="wrap_content"
+                      android:id="@+id/downloaded_no_results"
+                      android:visibility="gone"
+            />
+        </LinearLayout>
+    </ScrollView>
 </FrameLayout>
