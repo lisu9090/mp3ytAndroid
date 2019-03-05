@@ -353,7 +353,7 @@ class MainActivity : AppCompatActivity(), EasyPermissions.PermissionCallbacks {
         }
 
         override fun onPostExecute(output: List<SearchResult>?) {
-            if (output == null || output!!.size == 0) {
+            if (output == null || output.isEmpty()) {
                 mSearchFragment?.mNoResults!!.visibility = View.VISIBLE
                 mSearchFragment?.mNoResults!!.text = "No results returned."
             } else {

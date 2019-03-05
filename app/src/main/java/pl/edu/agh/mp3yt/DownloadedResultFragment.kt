@@ -3,7 +3,10 @@ package pl.edu.agh.mp3yt
 import android.annotation.SuppressLint
 import android.os.Bundle
 import android.graphics.drawable.Drawable
+import android.media.MediaPlayer
+import android.net.Uri
 import android.os.AsyncTask
+import android.os.Environment
 import android.support.v4.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
@@ -13,6 +16,7 @@ import android.widget.ImageView
 import android.widget.TextView
 import android.widget.Toast
 import models.SearchResult
+import utils.APP_AUDO_DATA_DIR
 import utils.YouTubeDownloader
 import java.io.InputStream
 import java.lang.Exception
@@ -23,12 +27,13 @@ class DownloadedResultFragment : Fragment() {
     private lateinit var playButton: ImageButton
     private lateinit var deleteButton: ImageButton
     private var playButtonToggler = false
+    private var mMediaPlayer: MediaPlayer? = null
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View? {
-        val view = inflater.inflate(R.layout.fragment_search_result, container, false)
+        val view = inflater.inflate(R.layout.fragment_downloaded_result, container, false)
         if(mModel != null){
             try{
                 val getImageTask = (@SuppressLint("StaticFieldLeak")
@@ -39,17 +44,24 @@ class DownloadedResultFragment : Fragment() {
                     }
                 }).execute(mModel!!.mImgSrc)
 
-                (view.findViewById(R.id.item_name) as TextView).text = mModel!!.name
-                (view.findViewById(R.id.item_id) as TextView).text = mModel!!.itemId
-                deleteButton = view.findViewById(R.id.download_button) as ImageButton
+                mMediaPlayer = MediaPlayer.create(context, Uri.parse(Environment.getExternalStorageDirectory().toString() + APP_AUDO_DATA_DIR + "/" + mModel!!.name))
+
+                (view.findViewById(R.id.downloaded_item_name) as TextView).text = mModel!!.name
+                (view.findViewById(R.id.downloaded_item_id) as TextView).text = mModel!!.fileModData!!.toString()
+                deleteButton = view.findViewById(R.id.downloaded_button) as ImageButton
                 deleteButton.setOnClickListener {
                     Toast.makeText(context,"Usuwam...", Toast.LENGTH_SHORT).show()
                 }
-                playButton = view.findViewById(R.id.play_button) as ImageButton
+                playButton = view.findViewById(R.id.downloaded_play_button) as ImageButton
                 playButton.setOnClickListener {
                     switchButtonImage()
+                    if(playButtonToggler)
+                        mMediaPlayer?.start()
+                    else
+                        mMediaPlayer?.pause()
+
                 }
-                (view.findViewById(R.id.item_image) as ImageView).setImageDrawable(getImageTask.get())
+                (view.findViewById(R.id.downloaded_item_image) as ImageView).setImageDrawable(getImageTask.get())
             }
             catch (e: Exception){
                 e.printStackTrace()
