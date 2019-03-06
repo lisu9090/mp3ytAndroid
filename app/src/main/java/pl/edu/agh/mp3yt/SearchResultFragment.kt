@@ -4,7 +4,6 @@ package pl.edu.agh.mp3yt
 import android.annotation.SuppressLint
 import android.os.Bundle
 import android.support.v4.app.Fragment
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -12,9 +11,11 @@ import models.SearchResult
 import utils.YouTubeDownloader
 import java.lang.Exception
 import android.graphics.drawable.Drawable
+import android.media.MediaPlayer
+import android.net.Uri
 import android.os.AsyncTask
-import android.view.ContextMenu
 import android.widget.*
+import utils.APP_AUDIO_API_URL_BASE
 import java.io.InputStream
 import java.net.URL
 
@@ -24,6 +25,7 @@ class SearchResultFragment: Fragment() {
     private lateinit var playButton: ImageButton
     private lateinit var downloadButton: ImageButton
     private var playButtonToggler = false
+    private var mMediaPlayer: MediaPlayer? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -66,6 +68,16 @@ class SearchResultFragment: Fragment() {
                 playButton = view.findViewById(R.id.play_button) as ImageButton
                 playButton.setOnClickListener {
                     switchButtonImage()
+                    if(playButtonToggler){
+                        mMediaPlayer = MediaPlayer()
+                        mMediaPlayer!!.setDataSource(APP_AUDIO_API_URL_BASE + "/getaudio/stream/" + mModel!!.itemId)
+                        mMediaPlayer!!.prepare()
+                        mMediaPlayer?.start()
+                    }
+                    else{
+                        mMediaPlayer?.stop()
+                        mMediaPlayer?.release()
+                    }
                 }
                 (view.findViewById(R.id.item_image) as ImageView).setImageDrawable(getImageTask.get())
             }

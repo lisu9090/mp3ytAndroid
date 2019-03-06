@@ -313,7 +313,7 @@ class MainActivity : AppCompatActivity(), EasyPermissions.PermissionCallbacks {
                 val channelInfo = ArrayList<SearchResult>()
 
                 val test = mSearchFragment?.mSearchView!!.query.toString()
-                val result = mService!!.search().list("id,snippet").setMaxResults(10).setQ(test)
+                val result = mService!!.search().list("id,snippet").setMaxResults(5).setQ(test)
                     .execute()
 
                 val videos = result.items

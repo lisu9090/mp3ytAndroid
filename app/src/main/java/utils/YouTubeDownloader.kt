@@ -11,7 +11,8 @@ import android.os.Environment.getExternalStorageDirectory
 import java.io.File
 import java.io.FileOutputStream
 
-const val APP_AUDO_DATA_DIR = "/AudioData"
+const val APP_AUDIO_DATA_DIR = "/AudioData"
+const val APP_AUDIO_API_URL_BASE = "https://mp3yt.herokuapp.com"
 
 class YouTubeDownloader internal constructor(): AsyncTask<String, Void, String>() {
     private val baseUrl = "https://mp3yt.herokuapp.com/process/"
@@ -38,7 +39,7 @@ class YouTubeDownloader internal constructor(): AsyncTask<String, Void, String>(
 
 //            val lenghtOfFile = connection.contentLength
 
-                val outputFile = File(Environment.getExternalStorageDirectory().toString() + APP_AUDO_DATA_DIR)
+                val outputFile = File(Environment.getExternalStorageDirectory().toString() + APP_AUDIO_DATA_DIR)
                 if (!outputFile.exists()){
                     outputFile.mkdir()
                 }

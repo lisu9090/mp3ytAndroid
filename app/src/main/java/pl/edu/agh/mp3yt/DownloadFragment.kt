@@ -8,14 +8,14 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import models.SearchResult
-import utils.APP_AUDO_DATA_DIR
+import utils.APP_AUDIO_DATA_DIR
 import java.io.File
 import java.io.FileFilter
 import java.util.*
 import java.util.regex.Pattern
 
 class DownloadFragment : Fragment() {
-    private val audioDataDir = File(Environment.getExternalStorageDirectory().toString() + APP_AUDO_DATA_DIR)
+    private val audioDataDir = File(Environment.getExternalStorageDirectory().toString() + APP_AUDIO_DATA_DIR)
     private val audioList = ArrayList<DownloadedResultFragment>()
     private val pattern = Pattern.compile("[(][A-Za-z0-9_\\-]{11}[)]")
 

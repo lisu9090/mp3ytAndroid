@@ -16,8 +16,7 @@ import android.widget.ImageView
 import android.widget.TextView
 import android.widget.Toast
 import models.SearchResult
-import utils.APP_AUDO_DATA_DIR
-import utils.YouTubeDownloader
+import utils.APP_AUDIO_DATA_DIR
 import java.io.InputStream
 import java.lang.Exception
 import java.net.URL
@@ -44,8 +43,6 @@ class DownloadedResultFragment : Fragment() {
                     }
                 }).execute(mModel!!.mImgSrc)
 
-                mMediaPlayer = MediaPlayer.create(context, Uri.parse(Environment.getExternalStorageDirectory().toString() + APP_AUDO_DATA_DIR + "/" + mModel!!.name))
-
                 (view.findViewById(R.id.downloaded_item_name) as TextView).text = mModel!!.name
                 (view.findViewById(R.id.downloaded_item_id) as TextView).text = mModel!!.fileModData!!.toString()
                 deleteButton = view.findViewById(R.id.downloaded_button) as ImageButton
@@ -55,8 +52,10 @@ class DownloadedResultFragment : Fragment() {
                 playButton = view.findViewById(R.id.downloaded_play_button) as ImageButton
                 playButton.setOnClickListener {
                     switchButtonImage()
-                    if(playButtonToggler)
+                    if(playButtonToggler){
+                        mMediaPlayer = MediaPlayer.create(context, Uri.parse(Environment.getExternalStorageDirectory().toString() + APP_AUDIO_DATA_DIR + "/" + mModel!!.name))
                         mMediaPlayer?.start()
+                    }
                     else
                         mMediaPlayer?.pause()
 
@@ -68,6 +67,11 @@ class DownloadedResultFragment : Fragment() {
             }
         }
         return view
+    }
+
+    override fun onDestroyView() {
+        super.onDestroyView()
+        mMediaPlayer?.release()
     }
 
     private fun switchButtonImage(){
